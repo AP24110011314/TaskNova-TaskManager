@@ -41,7 +41,7 @@ export function applyFilters(tasks, filters) {
   if (filters.tag) {
     const tag = filters.tag.trim().toLowerCase()
     filtered = filtered.filter(task =>
-      task.tags.some(t => t.toLowerCase() === tag)
+      (task.tags || []).some(t => t.toLowerCase() === tag)
     )
   }
 
@@ -90,7 +90,7 @@ export function applyFilters(tasks, filters) {
         case 'upcoming':
           return dueDate > todayEnd && dueDate <= weekEnd
         case 'overdue':
-          return dueDate < todayStart && task.status !== 'done'
+          return dueDate < now && task.status !== 'done'
         case 'nodate':
           return false
         default:

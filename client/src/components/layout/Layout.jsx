@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Outlet, useLocation, useSearchParams } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
-  const [searchParams] = useSearchParams()
 
-  // Close drawer on route or filter change
-  useEffect(() => {
-    setSidebarOpen(false)
-  }, [location.pathname, location.search, searchParams])
+  // Close drawer on route or filter change during render
+  const locationKey = location.pathname + location.search
+  const [prevLocationKey, setPrevLocationKey] = useState(locationKey)
+  if (prevLocationKey !== locationKey) {
+    setPrevLocationKey(locationKey)
+    if (sidebarOpen) {
+      setSidebarOpen(false)
+    }
+  }
 
   // Close drawer on Escape
   useEffect(() => {

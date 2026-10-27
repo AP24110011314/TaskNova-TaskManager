@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTasks } from '../../context/TaskContext'
+import { useTasks } from '../../hooks/useTasks'
 import PriorityBadge from '../common/PriorityBadge'
 import { getDueDateLabel } from '../../utils/dates'
 import TaskForm from './TaskForm'
@@ -13,11 +13,26 @@ export default function TaskCard({ task }) {
   const dueDateInfo = getDueDateLabel(task.dueDate, task.status)
   const isOverdue = dueDateInfo.isOverdue
 
-  const handleStatusToggle = async () => {
-    await toggleStatus(task._id)
+  const handleCheckboxToggle = async (e) => {
+    e.stopPropagation()
+    const targetStatus = task.status === 'done' ? 'todo' : 'done'
+    await toggleStatus(task._id, targetStatus)
   }
 
-  const handleEdit = () => {
+  const handleCycleStatus = async (e) => {
+    e.stopPropagation()
+    // Cycle: todo -> in-progress -> done -> todo
+    const cycle = {
+      'todo': 'in-progress',
+      'in-progress': 'done',
+      'done': 'todo'
+    }
+    const next = cycle[task.status] || 'todo'
+    await toggleStatus(task._id, next)
+  }
+
+  const handleEdit = (e) => {
+    e?.stopPropagation()
     setShowEditForm(true)
   }
 
@@ -26,64 +41,115 @@ export default function TaskCard({ task }) {
     setShowDeleteConfirm(false)
   }
 
+  const getStatusBadge = () => {
+    if (task.status === 'done') {
+      return {
+        label: 'Done',
+        classes: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+        dot: 'bg-emerald-500'
+      }
+    }
+    if (task.status === 'in-progress') {
+      return {
+        label: 'In Progress',
+        classes: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+        dot: 'bg-amber-500 animate-pulse'
+      }
+    }
+    return {
+      label: 'To Do',
+      classes: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/70',
+      dot: 'bg-slate-400'
+    }
+  }
+
+  const statusStyle = getStatusBadge()
+
   return (
     <>
       <div
-        className={`flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition-all ${
+        className={`group relative flex flex-col gap-2.5 rounded-xl border bg-white p-3.5 sm:p-4 shadow-xs hover:shadow-md transition-all duration-150 ${
           isOverdue
-            ? 'border-red-300 bg-red-50/40'
-            : 'border-slate-200'
+            ? 'border-rose-300 bg-rose-50/40 hover:border-rose-400'
+            : 'border-slate-200 hover:border-slate-300'
         }`}
       >
-        {/* Top row: Checkbox + Title on the left (min-w-0, title break-words), and Priority + Category + Actions on the right (shrink-0) */}
-        <div className="flex items-start justify-between gap-3">
+        {/* Main Header Row: Checkbox, Title, and Desktop Badges */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3">
+          {/* Left: Checkbox + Title */}
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <button
               type="button"
-              onClick={handleStatusToggle}
-              className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+              onClick={handleCheckboxToggle}
+              className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
                 task.status === 'done'
-                  ? 'bg-indigo-600 border-indigo-600 text-white'
-                  : 'border-slate-300 hover:border-indigo-500 text-transparent bg-white'
-              } focus:outline-none focus:ring-2 focus:ring-indigo-500/20`}
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                  : 'border-slate-300 bg-white hover:border-indigo-500 text-transparent'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500/30`}
               aria-label={task.status === 'done' ? 'Mark as todo' : 'Mark as done'}
               aria-pressed={task.status === 'done'}
             >
               {task.status === 'done' && (
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               )}
             </button>
 
-            <h3
-              className={`font-semibold text-slate-900 break-words min-w-0 text-sm sm:text-base ${
-                task.status === 'done' ? 'line-through text-slate-400' : ''
-              }`}
-            >
-              {task.title}
-            </h3>
+            <div className="min-w-0 flex-1">
+              <h3
+                onClick={handleEdit}
+                className={`font-semibold text-slate-900 break-words text-sm sm:text-base leading-snug cursor-pointer hover:text-indigo-600 transition-colors ${
+                  task.status === 'done' ? 'line-through text-slate-400 hover:text-slate-500' : ''
+                }`}
+                title="Click to edit task"
+              >
+                {task.title}
+              </h3>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 ml-2">
+          {/* Right on Desktop / Wrapped on Mobile: Status, Priority, Category, Actions */}
+          <div className="flex items-center flex-wrap gap-2 shrink-0 sm:ml-2 pl-8 sm:pl-0">
+            {/* Status cycling pill */}
+            <button
+              type="button"
+              onClick={handleCycleStatus}
+              title="Click to toggle status (To Do → In Progress → Done)"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full border transition-all cursor-pointer ${statusStyle.classes}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusStyle.dot}`} />
+              <span>{statusStyle.label}</span>
+            </button>
+
+            {/* Priority Badge */}
             <PriorityBadge priority={task.priority} />
+
+            {/* Category Pill */}
             {task.category && (
               <span
-                className="px-2.5 py-0.5 text-xs font-medium rounded-full truncate max-w-[120px] bg-slate-100 text-slate-600"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full truncate max-w-[130px] border border-slate-200/70"
                 style={{
-                  backgroundColor: task.category.color + '1F',
+                  backgroundColor: `${task.category.color}15`,
                   color: task.category.color
                 }}
               >
-                {task.category.name}
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: task.category.color }}
+                />
+                <span className="truncate">{task.category.name}</span>
               </span>
             )}
-            <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 sm:border-l sm:border-slate-200 sm:pl-2 ml-auto sm:ml-0">
               <button
                 type="button"
                 onClick={handleEdit}
-                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                 aria-label="Edit task"
+                title="Edit task"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -92,9 +158,10 @@ export default function TaskCard({ task }) {
               </button>
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true) }}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                 aria-label="Delete task"
+                title="Delete task"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/>
@@ -107,7 +174,7 @@ export default function TaskCard({ task }) {
 
         {/* Description */}
         {task.description && (
-          <p className="text-sm text-slate-500 line-clamp-2 pl-8">
+          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 pl-8 pr-2 leading-relaxed">
             {task.description}
           </p>
         )}
@@ -116,22 +183,28 @@ export default function TaskCard({ task }) {
         {(task.dueDate || (task.tags && task.tags.length > 0)) && (
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 pl-8 pt-0.5">
             {task.dueDate && (
-              <span className={`flex items-center gap-1 font-medium ${isOverdue ? 'text-red-600' : ''}`}>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${
+                  isOverdue
+                    ? 'bg-rose-100/70 text-rose-700 border border-rose-200'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                   <line x1="16" x2="16" y1="2" y2="6"/>
                   <line x1="8" x2="8" y1="2" y2="6"/>
                   <line x1="3" x2="21" y1="10" y2="10"/>
                 </svg>
-                {dueDateInfo.label}
+                <span>{dueDateInfo.label}</span>
               </span>
             )}
             {task.tags && task.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {task.tags.map(tag => (
                   <span
                     key={tag}
-                    className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-medium"
+                    className="px-2 py-0.5 bg-slate-100/80 hover:bg-slate-200/70 text-slate-600 rounded-md text-xs font-medium border border-slate-200/50 transition-colors"
                   >
                     #{tag}
                   </span>

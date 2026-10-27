@@ -1,45 +1,29 @@
 import { useState } from 'react'
 import { useTasks } from '../../hooks/useTasks'
-import { PRESET_COLORS } from '../../utils/constants'
 import ConfirmDialog from '../common/ConfirmDialog'
 import Modal from '../common/Modal'
+import CategoryForm from './CategoryForm'
 
 export default function CategoryList() {
   const { categories, createCategory, updateCategory, deleteCategory, refreshStats } = useTasks()
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
-  const [formData, setFormData] = useState({ name: '', color: '#3b82f6' })
-  const [error, setError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!formData.name.trim()) {
-      setError('Category name is required')
-      return
+  const handleFormSubmit = async (data) => {
+    if (editingCategory) {
+      await updateCategory(editingCategory._id, data)
+    } else {
+      await createCategory(data)
     }
-
-    try {
-      if (editingCategory) {
-        await updateCategory(editingCategory._id, formData)
-      } else {
-        await createCategory(formData)
-      }
-      refreshStats()
-      setShowForm(false)
-      setEditingCategory(null)
-      setFormData({ name: '', color: '#3b82f6' })
-      setError('')
-    } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to save category')
-    }
+    refreshStats()
+    setShowForm(false)
+    setEditingCategory(null)
   }
 
   const handleEdit = (category) => {
     setEditingCategory(category)
-    setFormData({ name: category.name, color: category.color })
-    setError('')
     setShowForm(true)
   }
 
@@ -66,10 +50,10 @@ export default function CategoryList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Categories</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Categories</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Organize your tasks into color-coded categories
           </p>
         </div>
@@ -149,76 +133,18 @@ export default function CategoryList() {
           onClose={() => {
             setShowForm(false)
             setEditingCategory(null)
-            setError('')
           }}
           title={editingCategory ? 'Edit Category' : 'New Category'}
           size="sm"
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={e => {
-                  setFormData({ ...formData, name: e.target.value })
-                  if (error) setError('')
-                }}
-                className={`w-full px-3 py-2 bg-white border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  error ? 'border-red-500' : 'border-slate-300'
-                } placeholder-slate-400`}
-                maxLength={40}
-                required
-                autoFocus
-              />
-              {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Color Palette
-              </label>
-              <div className="flex flex-wrap gap-2.5">
-                {PRESET_COLORS.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      formData.color === color
-                        ? 'scale-110 border-indigo-600 ring-2 ring-indigo-400'
-                        : 'border-transparent hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select color ${color}`}
-                    aria-pressed={formData.color === color}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingCategory(null)
-                  setError('')
-                }}
-                className="px-3.5 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
-              >
-                {editingCategory ? 'Save Changes' : 'Create Category'}
-              </button>
-            </div>
-          </form>
+          <CategoryForm
+            initialData={editingCategory}
+            onSubmit={handleFormSubmit}
+            onCancel={() => {
+              setShowForm(false)
+              setEditingCategory(null)
+            }}
+          />
         </Modal>
       )}
 

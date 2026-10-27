@@ -9,7 +9,10 @@ import Task from '../models/Task.js'
 
 dotenv.config()
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smart-todo'
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI
+if (!MONGO_URI) {
+  throw new Error('MONGODB_URI (or MONGO_URI) is not defined in .env')
+}
 
 describe('TaskNova API Tests', () => {
   let server

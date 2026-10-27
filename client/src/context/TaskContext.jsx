@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { TaskContext } from './TaskContextCore'
 import { tasksApi, categoriesApi, statsApi } from '../api'
 import {
   getCachedTasks, setCachedTasks, updateCachedTasks,
@@ -14,17 +15,18 @@ import { applyFilters, paginate } from '../utils/filters'
 import { generateClientId } from '../utils/helpers'
 import { useToast } from '../hooks/useToast'
 
-export const TaskContext = createContext(null)
-
 export function TaskProvider({ children }) {
   const toast = useToast()
-  const [tasks, setTasks] = useState([])
-  const [categories, setCategories] = useState([])
+  const [tasks, setTasks] = useState(() => getCachedTasks() || [])
+  const [categories, setCategories] = useState(() => getCachedCategories() || [])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [pendingCount, setPendingCount] = useState(0)
-  const [syncStatus, setSyncStatus] = useState('Synced')
+  const [pendingCount, setPendingCount] = useState(() => getPendingCount())
+  const [syncStatus, setSyncStatus] = useState(() => {
+    const count = getPendingCount()
+    return count > 0 ? `Offline (${count} pending)` : 'Synced'
+  })
 
   const isMounted = useRef(true)
   const syncIntervalRef = useRef(null)
@@ -44,17 +46,6 @@ export function TaskProvider({ children }) {
       setSyncStatus('Synced')
     }
   }, [])
-
-  // Initialize from cache
-  useEffect(() => {
-    const cachedTasks = getCachedTasks()
-    const cachedCategories = getCachedCategories()
-
-    if (cachedTasks) setTasks(cachedTasks)
-    if (cachedCategories) setCategories(cachedCategories)
-
-    updateSyncStatus()
-  }, [updateSyncStatus])
 
   // Fetch from API and update cache
   const refreshFromAPI = useCallback(async () => {
@@ -85,7 +76,16 @@ export function TaskProvider({ children }) {
 
   // Load from API on mount
   useEffect(() => {
-    refreshFromAPI()
+    let mounted = true
+    const init = async () => {
+      try {
+        await refreshFromAPI()
+      } catch (err) {
+        if (mounted) console.error(err)
+      }
+    }
+    init()
+    return () => { mounted = false }
   }, [refreshFromAPI])
 
   // Process queue
@@ -255,7 +255,7 @@ export function TaskProvider({ children }) {
 
     // Optimistic update
     setTasks(prev => [optimisticTask, ...prev])
-    setCachedTasks([optimisticTask, ...tasks])
+    updateCachedTasks(prev => [optimisticTask, ...(prev || [])])
 
     if (navigator.onLine) {
       try {
@@ -283,7 +283,7 @@ export function TaskProvider({ children }) {
     }
 
     return optimisticTask
-  }, [categories, tasks, updateSyncStatus, toast])
+  }, [categories, updateSyncStatus, toast])
 
   const updateTask = useCallback(async (taskId, updates) => {
     const originalTask = tasks.find(t => t._id === taskId)
@@ -377,11 +377,19 @@ export function TaskProvider({ children }) {
     }
   }, [tasks, updateSyncStatus, toast])
 
-  const toggleStatus = useCallback(async (taskId) => {
+  const toggleStatus = useCallback(async (taskId, explicitStatus) => {
     const task = tasks.find(t => t._id === taskId)
     if (!task) return
 
-    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    let newStatus = explicitStatus
+    if (!newStatus) {
+      const cycle = {
+        'todo': 'in-progress',
+        'in-progress': 'done',
+        'done': 'todo'
+      }
+      newStatus = cycle[task.status] || 'done'
+    }
     await updateTask(taskId, { status: newStatus })
   }, [tasks, updateTask])
 
@@ -559,12 +567,4 @@ export function TaskProvider({ children }) {
       {children}
     </TaskContext.Provider>
   )
-}
-
-export function useTasks() {
-  const context = useContext(TaskContext)
-  if (!context) {
-    throw new Error('useTasks must be used within a TaskProvider')
-  }
-  return context
 }

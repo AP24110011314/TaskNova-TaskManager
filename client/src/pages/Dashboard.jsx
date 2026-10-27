@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTasks } from '../hooks/useTasks'
 import { useFilters } from '../hooks/useFilters'
+import { SMART_GROUPS } from '../utils/constants'
 import QuickAdd from '../components/tasks/QuickAdd'
+import TaskGroups from '../components/tasks/TaskGroups'
 import FilterBar from '../components/filters/FilterBar'
 import FilterChips from '../components/filters/FilterChips'
 import TaskList from '../components/tasks/TaskList'
@@ -11,6 +13,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog'
 export default function Dashboard() {
   const {
     tasks,
+    categories,
     getFilteredTasks,
     bulkClearDone,
     loading,
@@ -39,29 +42,54 @@ export default function Dashboard() {
     setShowTaskForm(true)
   }
 
+  // Open task form modal when 'n' shortcut is pressed
+  useEffect(() => {
+    const handleOpenForm = () => {
+      setEditingTask(null)
+      setShowTaskForm(true)
+    }
+    window.addEventListener('open-task-form', handleOpenForm)
+    return () => window.removeEventListener('open-task-form', handleOpenForm)
+  }, [])
+
   const completedCount = tasks.filter(t => t.status === 'done').length
   const isFiltered = Object.keys(filters).some(
     k => filters[k] && filters[k] !== '' && k !== 'sort' && k !== 'page' && k !== 'limit'
   )
   const hasMore = currentPage < filteredResult.meta.pages
 
+  const pageTitle = useMemo(() => {
+    if (filters.group) {
+      const g = SMART_GROUPS.find(item => item.id === filters.group)
+      if (g) return g.label
+    }
+    if (filters.category && filters.category !== 'none') {
+      const c = categories.find(item => item._id === filters.category)
+      if (c) return `${c.name} Tasks`
+    }
+    if (filters.category === 'none') {
+      return 'Uncategorized Tasks'
+    }
+    return 'All Tasks'
+  }, [filters.group, filters.category, categories])
+
   return (
     <div className="w-full space-y-4 pb-24">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{pageTitle}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {filteredResult.meta.total} task{filteredResult.meta.total !== 1 ? 's' : ''}
             {completedCount > 0 ? ` · ${completedCount} completed` : ''}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
           {completedCount > 0 && (
             <button
               type="button"
               onClick={() => setShowClearDoneConfirm(true)}
-              className="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm"
+              className="flex-1 sm:flex-none justify-center rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm cursor-pointer"
             >
               Clear completed ({completedCount})
             </button>
@@ -70,7 +98,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={openCreateForm}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 flex items-center gap-1.5"
+            className="flex-1 sm:flex-none justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 flex items-center gap-1.5 cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" x2="12" y1="5" y2="19"/>
@@ -89,6 +117,8 @@ export default function Dashboard() {
           </button>
         </div>
       )}
+
+      <TaskGroups />
 
       <QuickAdd />
 

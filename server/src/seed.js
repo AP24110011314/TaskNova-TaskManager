@@ -1,11 +1,20 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import Category from './models/Category.js'
 import Task from './models/Task.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
 dotenv.config()
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smart-todo'
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI
+
+if (!mongoUri) {
+  console.error('Error: MONGODB_URI (or MONGO_URI) is not defined in the environment (.env file)')
+  process.exit(1)
+}
 
 const categories = [
   { name: 'Work', color: '#3b82f6' },
@@ -168,8 +177,8 @@ const tasks = [
 
 const seed = async () => {
   try {
-    await mongoose.connect(MONGO_URI)
-    console.log('Connected to MongoDB')
+    const conn = await mongoose.connect(mongoUri)
+    console.log(`Connected to MongoDB Atlas: ${conn.connection.host}`)
 
     // Clear existing data
     await Task.deleteMany({})

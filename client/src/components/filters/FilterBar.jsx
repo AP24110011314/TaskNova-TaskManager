@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTasks } from '../../context/TaskContext'
+import { useTasks } from '../../hooks/useTasks'
 import { useFilters } from '../../hooks/useFilters'
 import { PRIORITIES, STATUS_OPTIONS } from '../../utils/constants'
 
@@ -29,15 +29,41 @@ export default function FilterBar() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 text-sm">Filters</h3>
         <button
+          type="button"
           onClick={() => setShowFilters(!showFilters)}
-          className="text-xs font-semibold text-indigo-600 hover:underline"
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+            showFilters || activeFilterCount > 0
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-xs'
+              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+          }`}
+          aria-expanded={showFilters}
         >
-          {showFilters ? 'Hide' : 'Show'} filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span>{showFilters ? 'Hide filters' : 'Filter tasks'}</span>
+          {activeFilterCount > 0 && (
+            <span className="px-1.5 py-0.2 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
+          <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
+
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors"
+          >
+            Clear all ({activeFilterCount})
+          </button>
+        )}
       </div>
 
       {showFilters && (

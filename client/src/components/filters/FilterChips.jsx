@@ -1,4 +1,4 @@
-import { useTasks } from '../../context/TaskContext'
+import { useTasks } from '../../hooks/useTasks'
 import { useFilters } from '../../hooks/useFilters'
 import { PRIORITIES, STATUS_OPTIONS } from '../../utils/constants'
 

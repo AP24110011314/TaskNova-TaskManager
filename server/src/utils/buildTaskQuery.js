@@ -97,7 +97,7 @@ export function buildTaskQuery(query) {
         filter.dueDate = { $gt: todayEnd, $lte: weekEnd }
         break
       case 'overdue':
-        filter.dueDate = { $lt: todayStart }
+        filter.dueDate = { $lt: now }
         filter.status = { $ne: 'done' }
         break
       case 'nodate':

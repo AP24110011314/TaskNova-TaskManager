@@ -14,7 +14,7 @@ export default function SortSelect() {
     <select
       value={filters.sort}
       onChange={e => setFilters({ sort: e.target.value })}
-      className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs transition-colors"
+      className="px-2 sm:px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs transition-colors max-w-[105px] sm:max-w-none truncate cursor-pointer"
       aria-label="Sort by"
     >
       {sortOptions.map(opt => (

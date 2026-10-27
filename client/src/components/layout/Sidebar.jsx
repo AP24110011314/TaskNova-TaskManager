@@ -2,8 +2,9 @@ import { NavLink, useLocation, useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns'
 import { useTasks } from '../../hooks/useTasks'
-import { SMART_GROUPS, PRESET_COLORS } from '../../utils/constants'
+import { SMART_GROUPS } from '../../utils/constants'
 import Modal from '../common/Modal'
+import CategoryForm from '../categories/CategoryForm'
 
 function calculateGroupCounts(tasks) {
   const now = new Date()
@@ -34,9 +35,6 @@ function calculateGroupCounts(tasks) {
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
-  const [categoryName, setCategoryName] = useState('')
-  const [categoryColor, setCategoryColor] = useState('#3b82f6')
-  const [categoryError, setCategoryError] = useState('')
 
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -46,23 +44,10 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const { tasks, categories, createCategory, refreshStats } = useTasks()
   const groupCounts = calculateGroupCounts(tasks)
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault()
-    if (!categoryName.trim()) {
-      setCategoryError('Category name is required')
-      return
-    }
-
-    try {
-      await createCategory({ name: categoryName.trim(), color: categoryColor })
-      refreshStats()
-      setShowCategoryModal(false)
-      setCategoryName('')
-      setCategoryColor('#3b82f6')
-      setCategoryError('')
-    } catch (err) {
-      setCategoryError(err.response?.data?.error?.message || 'Failed to create category')
-    }
+  const handleCreateCategory = async (data) => {
+    await createCategory(data)
+    refreshStats()
+    setShowCategoryModal(false)
   }
 
   // Consistent inline SVG icons (w-4 h-4)
@@ -132,9 +117,11 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           {/* Brand header */}
           <div className="flex items-center justify-between px-3 mb-6">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-lg shadow-sm shadow-indigo-200 shrink-0">
-                T
-              </span>
+              <img
+                src="/favicon.svg"
+                alt="TaskNova"
+                className="w-9 h-9 rounded-xl shadow-sm shadow-indigo-100 shrink-0"
+              />
               <div className="min-w-0">
                 <h1 className="text-base font-bold text-slate-900 leading-tight truncate">TaskNova</h1>
                 <p className="text-xs text-slate-400 font-normal truncate">Smart Task Manager</p>
@@ -291,78 +278,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       {showCategoryModal && (
         <Modal
           isOpen={showCategoryModal}
-          onClose={() => {
-            setShowCategoryModal(false)
-            setCategoryName('')
-            setCategoryError('')
-          }}
+          onClose={() => setShowCategoryModal(false)}
           title="New Category"
           size="sm"
         >
-          <form onSubmit={handleCreateCategory} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={categoryName}
-                onChange={e => {
-                  setCategoryName(e.target.value)
-                  if (categoryError) setCategoryError('')
-                }}
-                className={`w-full px-3 py-2 bg-white border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  categoryError ? 'border-red-500' : 'border-slate-300'
-                } placeholder-slate-400`}
-                maxLength={40}
-                placeholder="e.g. Work, Personal, Fitness"
-                autoFocus
-              />
-              {categoryError && <p className="mt-1 text-xs text-red-500">{categoryError}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Color
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setCategoryColor(color)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      categoryColor === color
-                        ? 'scale-110 border-indigo-600 ring-2 ring-indigo-400'
-                        : 'border-transparent hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Color ${color}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCategoryModal(false)
-                  setCategoryName('')
-                  setCategoryError('')
-                }}
-                className="px-3.5 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Create
-              </button>
-            </div>
-          </form>
+          <CategoryForm
+            onSubmit={handleCreateCategory}
+            onCancel={() => setShowCategoryModal(false)}
+          />
         </Modal>
       )}
     </>

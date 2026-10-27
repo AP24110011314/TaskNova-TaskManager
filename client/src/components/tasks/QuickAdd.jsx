@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useTasks } from '../../context/TaskContext'
+import { useTasks } from '../../hooks/useTasks'
 import { useFilters } from '../../hooks/useFilters'
 
 export default function QuickAdd() {

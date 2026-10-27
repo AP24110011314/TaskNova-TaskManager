@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useTasks } from '../../context/TaskContext'
+import { useTasks } from '../../hooks/useTasks'
 import { PRIORITIES, STATUS_OPTIONS } from '../../utils/constants'
 import { formatDateForInput } from '../../utils/dates'
 import Modal from '../common/Modal'
@@ -119,11 +119,23 @@ export default function TaskForm({
     onClose()
   }
 
-  const priorityColorMap = {
-    low: 'slate',
-    medium: 'blue',
-    high: 'orange',
-    urgent: 'red'
+  const priorityOptionStyles = {
+    low: {
+      selected: 'border-slate-500 bg-slate-100 text-slate-800 font-semibold ring-1 ring-slate-400',
+      idle: 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+    },
+    medium: {
+      selected: 'border-blue-500 bg-blue-50 text-blue-800 font-semibold ring-1 ring-blue-400',
+      idle: 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+    },
+    high: {
+      selected: 'border-orange-500 bg-orange-50 text-orange-800 font-semibold ring-1 ring-orange-400',
+      idle: 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+    },
+    urgent: {
+      selected: 'border-rose-500 bg-rose-50 text-rose-800 font-semibold ring-1 ring-rose-400',
+      idle: 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+    }
   }
 
   return (
@@ -192,17 +204,15 @@ export default function TaskForm({
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Priority
           </label>
-          <div className="flex gap-2" role="radiogroup" aria-label="Priority">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Priority">
             {PRIORITIES.map(p => {
-              const color = priorityColorMap[p.value]
+              const styles = priorityOptionStyles[p.value] || priorityOptionStyles.medium
               const isSelected = formData.priority === p.value
               return (
                 <label
                   key={p.value}
-                  className={`flex-1 px-3 py-2 text-center text-sm font-medium rounded-lg border-2 cursor-pointer transition-colors ${
-                    isSelected
-                      ? `border-${color}-500 bg-${color}-50`
-                      : 'border-slate-200 hover:border-slate-300'
+                  className={`px-3 py-2 text-center text-xs sm:text-sm font-medium rounded-lg border-2 cursor-pointer transition-colors ${
+                    isSelected ? styles.selected : styles.idle
                   }`}
                 >
                   <input

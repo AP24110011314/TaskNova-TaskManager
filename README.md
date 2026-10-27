@@ -110,58 +110,62 @@ A full-stack MERN application for managing tasks with categories, priorities, sm
 └── README.md
 ```
 
-## Getting Started
+## Getting Started (macOS, No Docker)
+
+> **No Docker required**: TaskNova runs completely natively on macOS. MongoDB runs locally at `mongodb://127.0.0.1:27017/smart-todo`. The backend runs on port **5001** (macOS AirPlay occupies port 5000) and the Vite client runs on port **5173** with proxying to `/api`.
 
 ### Prerequisites
-- Node.js 18+
-- MongoDB running locally on default port (27017)
+
+```bash
+# Ensure Node 18+ and MongoDB Community are installed via Homebrew
+brew install node
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
+
+# Verify MongoDB is running
+mongosh --eval "db.runCommand({ ping: 1 })"
+```
 
 ### Installation
 
 ```bash
-# Install server dependencies
-cd server
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
+# Install root, server, and client dependencies in one command
+npm run install:all
 ```
 
-### Development
+### Seeding the Database
 
 ```bash
-# Terminal 1: Start MongoDB (if not running as service)
-mongod
-
-# Terminal 2: Start backend server (port 5001)
-cd server
-npm run dev
-
-# Terminal 3: Start frontend (port 5173/5174)
-cd client
-npm run dev
-```
-
-### Seeding Database
-
-```bash
-cd server
+# Seed 4 categories and 15 sample tasks into local MongoDB
 npm run seed
 ```
 
-This creates 4 categories (Work, Personal, Study, Health) and 15 sample tasks with varied priorities, statuses, due dates, and tags.
+### Running Locally
+
+```bash
+# Start both server (port 5001) and client (port 5173) concurrently:
+npm run dev
+
+# Or run separately in two terminal windows:
+# Terminal 1: Backend API (port 5001)
+npm run dev:server
+# Terminal 2: Frontend Vite App (port 5173)
+npm run dev:client
+```
+
+Open your browser to:
+- Frontend: **http://localhost:5173**
+- Backend Health: **http://localhost:5001/api/health**
 
 ### Production Build
 
 ```bash
-# Build client
-cd client
+# Build the client for production
 npm run build
 
-# Start server in production mode
-cd ../server
-npm start
+# Start the server
+npm run start
 ```
 
 ## API Endpoints

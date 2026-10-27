@@ -13,7 +13,7 @@ export function formatDueDate(dateString) {
   return format(date, 'MMM d')
 }
 
-export function getDueDateLabel(dateString) {
+export function getDueDateLabel(dateString, status) {
   if (!dateString) return { label: 'No date', isOverdue: false, variant: 'default' }
 
   const date = parseISO(dateString)
@@ -26,11 +26,12 @@ export function getDueDateLabel(dateString) {
     return { label: 'Tomorrow', isOverdue: false, variant: 'upcoming' }
   }
   if (isPast(date)) {
+    const isTaskOverdue = status !== 'done'
     const daysOverdue = Math.ceil((now - date) / (1000 * 60 * 60 * 24))
     return {
-      label: `Overdue ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}`,
-      isOverdue: true,
-      variant: 'overdue'
+      label: isTaskOverdue ? `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}` : format(date, 'MMM d'),
+      isOverdue: isTaskOverdue,
+      variant: isTaskOverdue ? 'overdue' : 'default'
     }
   }
   return { label: format(date, 'MMM d'), isOverdue: false, variant: 'upcoming' }

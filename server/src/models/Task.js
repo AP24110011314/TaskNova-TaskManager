@@ -27,11 +27,14 @@ taskSchema.pre('save', function(next) {
 // Pre-update hook for findOneAndUpdate
 taskSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate()
-  if (update.status) {
-    if (update.status === 'done') {
-      update.completedAt = new Date()
+  if (!update) return next()
+  const status = update.status !== undefined ? update.status : (update.$set && update.$set.status)
+  if (status !== undefined) {
+    const completedAt = status === 'done' ? new Date() : null
+    if (update.$set) {
+      update.$set.completedAt = completedAt
     } else {
-      update.completedAt = null
+      update.completedAt = completedAt
     }
   }
   next()

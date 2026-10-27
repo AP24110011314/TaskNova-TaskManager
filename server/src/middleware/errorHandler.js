@@ -1,5 +1,18 @@
 export const errorHandler = (err, req, res, next) => {
-  console.error(err.stack)
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(err.stack || err.message)
+  }
+
+  // SyntaxError from body-parser (malformed JSON)
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'Validation failed',
+        details: [{ field: 'body', msg: 'Malformed JSON payload' }]
+      }
+    })
+  }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
@@ -15,7 +28,7 @@ export const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key error
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0]
+    const field = Object.keys(err.keyValue || {})[0] || 'field'
     return res.status(409).json({
       success: false,
       error: { message: 'Duplicate value', details: [{ field, msg: `${field} already exists` }] }
@@ -31,9 +44,13 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Default error
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode
+  const statusCode = err.status || err.statusCode || (res.statusCode !== 200 ? res.statusCode : 500)
+  const message = (process.env.NODE_ENV === 'production' && statusCode === 500)
+    ? 'Internal Server Error'
+    : (err.message || 'Server Error')
+
   res.status(statusCode).json({
     success: false,
-    error: { message: err.message || 'Server Error', details: [] }
+    error: { message, details: [] }
   })
 }
