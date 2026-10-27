@@ -6,6 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "build": "echo 'Build complete'",
     "start": "node src/server.js",
     "seed": "node src/seed.js",
     "test": "node --test src/tests/api.test.js"
