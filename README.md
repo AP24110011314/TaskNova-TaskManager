@@ -2,6 +2,13 @@
 
 A full-stack MERN application for managing tasks with categories, priorities, smart groups, statistics, and offline support.
 
+## 📸 Screenshots
+
+### 1. Dashboard
+![TaskNove-Dashboard](screenshot/p1.png)
+
+### 2. Task Insights Page
+![TaskNove-Statistics Page](screenshot/p2.png)
 ## Features
 
 ### 1. Task Management (CRUD)
